@@ -35,7 +35,7 @@ while [ -h "$PRG" ] ; do
         PRG=`dirname "$PRG"`"/$link"
     fi
 done
-SAVED="$(cd \"$(dirname \"$PRG\")\" && pwd)"
+SAVED="$(cd "$(dirname "$PRG")" && pwd)"
 cd "$SAVED" > /dev/null || exit
 APP_HOME=$(pwd -P) || exit
 cd "$OLDPWD" > /dev/null || exit
@@ -44,7 +44,7 @@ APP_NAME="Gradle"
 APP_BASE_NAME=$(basename "$0")
 
 # Add default JVM options here. You can also use JAVA_OPTS and GRADLE_OPTS to pass JVM options to this script.
-DEFAULT_JVM_OPTS='\"\$JAVA_OPTS\" \"\$GRADLE_OPTS\"'
+DEFAULT_JVM_OPTS='"$JAVA_OPTS" "$GRADLE_OPTS"'
 
 # Use the maximum available, or set MAX_FD != nothing to use that value.
 MAX_FD="maximum"
@@ -63,11 +63,18 @@ die() {
 }
 
 # OS specific support (must be 'true' or 'false').
-OS_NAME=$(uname -s | tr A-Z a-z)
-OS_ARCH=$(uname -m | tr A-Z a-z)
-case "${OS_NAME}" in
-  cygwin* | msys* | mingw* | nativecompile* )
-    IS_WINDOWS=true
+case "$(uname)" in
+  CYGWIN* )
+    cygwin=true
+    ;;
+  Darwin* )
+    darwin=true
+    ;;
+  MINGW* )
+    msys=true
+    ;;
+  NATIVECOMPILE )
+    nativecompile=true
     ;;
 esac
 
@@ -107,7 +114,7 @@ if ! "$cygwin" && ! "$darwin" && ! "$nativecompile" ; then
     esac
 fi
 
-if [ "$IS_CYGWIN" = true -o "$IS_MINGW" = true -o "$IS_MSYS" = true ] ; then
+if [ "$cygwin" = true -o "$msys" = true ] ; then
     APP_HOME=`cygpath --path --mixed "$APP_HOME"`
     CLASSPATH=`cygpath --path --mixed "$CLASSPATH"`
 
@@ -154,38 +161,23 @@ if [ "$IS_CYGWIN" = true -o "$IS_MINGW" = true -o "$IS_MSYS" = true ] ; then
 fi
 
 # Escape application args
+save_term_settings() {
+    SAVED_STTY=$(stty -g 2>/dev/null)
+}
+
+restore_term_settings() {
+    if [ -n "$SAVED_STTY" ] && [ $? -eq 0 ] ; then
+        stty $SAVED_STTY
+    fi
+}
+
+save_term_settings
+trap restore_term_settings EXIT
+
 for s in "${@}" ; do
     s="`printf '%s\n' "$s" | sed "s/'/'\\\\''/g"`" #'
     APP_ARGS="$APP_ARGS '$s'"
 done
-
-# Store original values of maxFdLimit before applying ulimit.
-store_orig_maxFdLimit() {
-    MAX_FD_LIMIT=`ulimit -H -n`
-    if [ $MAX_FD_LIMIT != 'unlimited' ] ; then
-        MAX_FD_LIMIT_EXPR=`expr $MAX_FD_LIMIT \/ 10`
-    fi
-}
-
-# Restore the original value of the maximum file descriptor limit.
-restore_orig_maxFdLimit() {
-    if [ "$MAX_FD" != "maximum" ] ; then
-        if [ $HAS_ARGS = "true" ] ; then
-            MAX_FD_LIMIT_EXPR="`expr $MAX_FD \/ 10`"
-        fi
-        if [ $MAX_FD_LIMIT_EXPR != '' ] ; then
-            if [ $PREV_MAX_FD != $MAX_FD_LIMIT_EXPR ] ; then
-                ulimit -n $MAX_FD_LIMIT_EXPR
-            fi
-        fi
-    else
-        ulimit -n $PREV_MAX_FD
-    fi
-}
-
-if [ "$MAX_FD" = "maximum" ] ; then
-    store_orig_maxFdLimit
-fi
 
 # Collect all arguments for the java command, stacking in reverse order:
 #   * args from the command line
@@ -196,7 +188,7 @@ fi
 #   * DEFAULT_JVM_OPTS, JAVA_OPTS, and GRADLE_OPTS environment variables.
 
 # For Cygwin or MSYS, switch paths to Windows format before running java
-if [ "$CYGWIN" = "true" -o "$MSYS" = "true" ] ; then
+if [ "$cygwin" = true -o "$msys" = true ] ; then
     APP_HOME=`cygpath --path --mixed "$APP_HOME"`
     CLASSPATH=`cygpath --path --mixed "$CLASSPATH"`
 
@@ -242,30 +234,4 @@ if [ "$CYGWIN" = "true" -o "$MSYS" = "true" ] ; then
     esac
 fi
 
-# Escape application args
-for s in "${@}" ; do
-    s="`printf '%s\n' "$s" | sed "s/'/'\\\\''/g"`" #'
-    APP_ARGS="$APP_ARGS '$s'"
-done
-
-# Collect all arguments for the java command
-set -- \
-        "-Dorg.gradle.appname=$APP_BASE_NAME" \
-        -classpath "$CLASSPATH" \
-        org.gradle.wrapper.GradleWrapperMain \
-        "$@"
-
-# Stop when "xargs" is not even called.
-if [ $? != 0 ] ; then
-    exit $?
-fi
-while true
-do
-    case "$1" in
-      -debug ) set -x; shift ;;
-      -noverify ) shift ;;
-      * ) break ;;
-    esac
-done
-
-exec "$JAVACMD" "$DEFAULT_JVM_OPTS" $JAVA_OPTS $GRADLE_OPTS -Dorg.gradle.appname=$APP_BASE_NAME -classpath "$CLASSPATH" org.gradle.wrapper.GradleWrapperMain "$@"
+exec "$JAVACMD" $DEFAULT_JVM_OPTS $JAVA_OPTS $GRADLE_OPTS -Dorg.gradle.appname=$APP_BASE_NAME -classpath "$CLASSPATH" org.gradle.wrapper.GradleWrapperMain "$@"
