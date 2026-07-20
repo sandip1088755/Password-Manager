@@ -1,0 +1,8 @@
+#!/bin/sh
+
+APP_HOME=$(cd "$(dirname "$0")" && pwd)
+cd "$APP_HOME" > /dev/null
+
+JAVACMD="java"
+
+exec "$JAVACMD" $JAVA_OPTS $GRADLE_OPTS -Dorg.gradle.appname=gradlew -classpath "$CLASSPATH" org.gradle.wrapper.GradleWrapperMain "$@"
